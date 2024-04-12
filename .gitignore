@@ -1,0 +1,6 @@
+.venv/*
+*.pt
+*.engine
+runs/*
+*__pycache__/*
+.vscode/*
