@@ -19,11 +19,11 @@ class ProcessingPipeline:
     def run(self)->None:
         # Run the input pipeline
         # run the space merger
-        # run the output and repeats
+        # run the output and repeat
 
         # initiailize the streams here
         for stream in self.__input_streams:
-            stream.next() 
+            stream.init() 
         
         try:
             cv.namedWindow("Preview 0", cv.WINDOW_NORMAL)

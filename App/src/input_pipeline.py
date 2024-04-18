@@ -22,6 +22,9 @@ class InputPipeline:
         self.__is_result_ready = Event()
         self.__started = False
 
+    def init(self)->None:
+        self.next()
+
 
 
     def next(self)->tuple[dict, cv.Mat]:

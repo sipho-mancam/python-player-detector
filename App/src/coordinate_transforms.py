@@ -43,10 +43,23 @@ class PerspectiveTransform(BTransformations):
         self.__pers_matrix = None
         self.__centre_pt = centre_pt
         self.__sort_points()
-        self.__calculate_dst_pts()
+        self.__calculate_dst_poly()
+        self.__init()
+        
 
+    def __init(self)->None:
+        # get the transformation matrix
+        self.__pers_matrix = cv.getPerspectiveTransform(np.array(self.__src_poly, dtype=np.float32), np.array(self.__dst_poly, dtype=np.float32))
+
+    def __calculate_dst_poly(self):
+        if self.__centre_pt is not None:
+            self.__calculate_dst_pts()
+        else:
+            self.__calculate_dst_pts_wings()
+
+    # calculates for the center cam --> Cam 2
     def __calculate_dst_pts(self)->None:
-        alpha = 250
+        alpha = 500
         y3 = alpha + (2 * self.__centre_pt[1]) - self.__src_poly[0][1]
         x3 = self.__src_poly[0][0]
         x4 = x3 + (self.__src_poly[-1][0] - self.__src_poly[0][0])
@@ -57,16 +70,62 @@ class PerspectiveTransform(BTransformations):
         self.__dst_poly.append((x4, self.__src_poly[-1][1]+alpha))
         print("Dst Pts: ", self.__dst_poly)
 
+    # calculates dst for cam 1, and cam 3 < side cams>
+    def __calculate_dst_pts_wings(self):
+        y_vector = [y[1] for y in self.__src_poly]
+        x_vector = [x[0] for x in self.__src_poly]
+        alpha = 250
+        x_0 = min(x_vector)
+        y_0 = min(y_vector) - alpha
+        x_n = max(x_vector)
+        y_n = max(y_vector) + alpha
+        x_1 = x_n
+        y_1 = y_0
+        x_2 = x_0
+        y_2 = y_n
+        
+        self.__dst_poly.append((x_2, y_2))
+        self.__dst_poly.append((x_0, y_0))
+        self.__dst_poly.append((x_n, y_n)) 
+        self.__dst_poly.append((x_1, y_1))
+        
+        print("Dst Pts: ", self.__dst_poly)
+
+
+
     def __sort_points(self)->None:
         self.__src_poly = sorted(self.__src_poly)
         print("Sorted Pts: ", self.__src_poly)
         
 
     def transform(self, detections:list[dict])->list[dict]:
+        super().transform(detections)
+
+        src_pts = []
+        for det in detections:
+            if det.get('coordinates') is not None:
+                src_pts.append(det.get("coordinates"))
+        
         # apply the perspective transform here..
-        print(self.__dst_poly)
-        return super().transform(detections)
+        trans = cv.perspectiveTransform(np.array(src_pts, dtype=np.float32)[None, :, :], self.__pers_matrix)
+        result = []
+        for transformed_point, det_ in zip(trans[0], detections):
+            det_["coordinates"] = (int(transformed_point[0]), int(transformed_point[1]))
+            if transformed_point[0] >= 0 and transformed_point[1] >=0:
+                result.append((int(transformed_point[0]), int(transformed_point[1])))
+        # print(self.__dst_poly)
+        return detections, result
     
+    def getDstPts(self)->list:
+        if self.__centre_pt is not None:
+            return self.__dst_poly
+        else:
+            dst_vector = []
+            dst_vector.append(self.__dst_poly[0])
+            dst_vector.append(self.__dst_poly[1])
+            dst_vector.append(self.__dst_poly[3])
+            dst_vector.append(self.__dst_poly[2])
+            return dst_vector
     
 
 class Transformer:
@@ -86,15 +145,15 @@ class Transformer:
         self.__frame = img
         cv.namedWindow(self.__window_name, cv.WINDOW_NORMAL)
         # cv.displayOverlay(self.__window_name, "Select The Pitch Coordinates for the Mask")
-        cv.setMouseCallback(self.__window_name, self.get_coordinat)
+        cv.setMouseCallback(self.__window_name, self.get_coordinate)
         cv.imshow(self.__window_name, img)
-
-        print("Stream ID: ", self.__stream_id)
 
         while not self.__init_done:
             key = cv.waitKey(0)
             if self.__centre_point is not None:
                 self.__pers_transformer = PerspectiveTransform(self.__pitch_coordinates, self.__centre_point)
+            else:
+                self.__pers_transformer = PerspectiveTransform(self.__pitch_coordinates, None)
 
             if key == 13:
                 if len(self.__pitch_coordinates) >= 4:
@@ -103,15 +162,13 @@ class Transformer:
                     elif self.__stream_id != 1:
                         self.__init_done = True
 
-        
-
         self.__frame = cv.polylines(self.__frame, [np.array(self.__pitch_coordinates)], True, (0, 0, 255), 2)
         cv.imshow(self.__window_name, self.__frame)
         cv.waitKey(20)
         self.__is_init = True
         cv.destroyWindow(self.__window_name)
-
-    def get_coordinat(self, event, x, y, flags, params)->None:
+       
+    def get_coordinate(self, event, x, y, flags, params)->None:
         if event == cv.EVENT_LBUTTONDOWN:
             if len(self.__pitch_coordinates) >= 4:
                 self.__centre_point = (x , y)
@@ -136,12 +193,16 @@ class Transformer:
     def transform(self, img:cv.Mat, detections:list[dict])->tuple[list[dict], cv.Mat]:
         if not self.__is_init:
             self.init(img)
-        
+        detections_t = detections
         img = cv.polylines(img, [np.array(self.__pitch_coordinates)], True, (255, 0, 0), 2)
+       
+        res_vector = None
         if self.__pers_transformer is not None:
-            self.__pers_transformer.transform(detections)
-
-        return img, detections
+            detections_t, res_vector = self.__pers_transformer.transform(detections)
+            img  = cv.polylines(img, [np.array(self.__pers_transformer.getDstPts())], True, (255, 255, 255), 3)
+            for point in res_vector:
+                img = cv.circle(img, point, 15, (255, 255, 255), thickness=cv.FILLED)
+        return img, (detections_t, res_vector)
         
         # don some transformations here
 
