@@ -42,6 +42,10 @@ class PerspectiveTransform(BTransformations):
         self.__dst_poly = []
         self.__pers_matrix = None
         self.__centre_pt = centre_pt
+        self.__top_offset = 0
+        self.__left_offset = 0
+        self.__dst_width = 0
+        self.__dst_height = 0
         self.__sort_points()
         self.__calculate_dst_poly()
         self.__init()
@@ -68,7 +72,14 @@ class PerspectiveTransform(BTransformations):
         self.__dst_poly.append((x3, y3))
         self.__dst_poly.append((x4, y3))
         self.__dst_poly.append((x4, self.__src_poly[-1][1]+alpha))
-        print("Dst Pts: ", self.__dst_poly)
+
+        x_vector = [x3, x4]
+        y_vector = [y3, self.__src_poly[-1][1]+alpha]
+        self.__left_offset = min(x_vector)
+        self.__top_offset = min(y_vector)
+        self.__dst_height = max(y_vector) - min(y_vector)
+        self.__dst_width = max(x_vector) - min(x_vector)
+     
 
     # calculates dst for cam 1, and cam 3 < side cams>
     def __calculate_dst_pts_wings(self):
@@ -76,9 +87,13 @@ class PerspectiveTransform(BTransformations):
         x_vector = [x[0] for x in self.__src_poly]
         alpha = 250
         x_0 = min(x_vector)
+        self.__left_offset = x_0 if x_0 > 0 else 1
         y_0 = min(y_vector) - alpha
+        self.__top_offset = y_0 if y_0 > 0 else 1
         x_n = max(x_vector)
         y_n = max(y_vector) + alpha
+        self.__dst_height = y_n-y_0
+        self.__dst_width = x_n - x_0
         x_1 = x_n
         y_1 = y_0
         x_2 = x_0
@@ -89,13 +104,10 @@ class PerspectiveTransform(BTransformations):
         self.__dst_poly.append((x_n, y_n)) 
         self.__dst_poly.append((x_1, y_1))
         
-        print("Dst Pts: ", self.__dst_poly)
-
-
 
     def __sort_points(self)->None:
         self.__src_poly = sorted(self.__src_poly)
-        print("Sorted Pts: ", self.__src_poly)
+        # print("Sorted Pts: ", self.__src_poly)
         
 
     def transform(self, detections:list[dict])->list[dict]:
@@ -126,6 +138,12 @@ class PerspectiveTransform(BTransformations):
             dst_vector.append(self.__dst_poly[3])
             dst_vector.append(self.__dst_poly[2])
             return dst_vector
+        
+    def get_offsets(self)->tuple:
+       return self.__left_offset, self.__top_offset, self.__dst_width, self.__dst_height
+
+       
+
     
 
 class Transformer:
@@ -189,6 +207,19 @@ class Transformer:
                 frame = cv.line(frame, self.__pitch_coordinates[-1], (x, y), (0,255, 0), 2)
                 cv.imshow(self.__window_name, frame)
 
+    def __normalize_coordinates(self, width, height, detections_t)->dict:
+        img_width = width
+        img_height = height
+        detections_n = detections_t
+        offsets = self.__pers_transformer.get_offsets()
+
+        for detection in detections_n:
+            coord = detection.get('coordinates')
+            x_n = ((coord[1] - offsets[0]) / offsets[2])
+            y_n = ((coord[0]  - offsets[1])/ offsets[3])
+            print((x_n, y_n))
+        return detections_n
+
             
     def transform(self, img:cv.Mat, detections:list[dict])->tuple[list[dict], cv.Mat]:
         if not self.__is_init:
@@ -200,8 +231,11 @@ class Transformer:
         if self.__pers_transformer is not None:
             detections_t, res_vector = self.__pers_transformer.transform(detections)
             img  = cv.polylines(img, [np.array(self.__pers_transformer.getDstPts())], True, (255, 255, 255), 3)
+            # print(detections_t)
             for point in res_vector:
                 img = cv.circle(img, point, 15, (255, 255, 255), thickness=cv.FILLED)
+            detections_t = self.__normalize_coordinates(img.shape[0], img.shape[1], detections_t)
+           
         return img, (detections_t, res_vector)
         
         # don some transformations here
