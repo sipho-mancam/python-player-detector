@@ -144,8 +144,8 @@ class PerspectiveTransform(BTransformations):
 
        
 
+colors = [[b for  b in range(256)], [g for  g in range(256)], [r for  r in range(256)]]
     
-
 class Transformer:
     def __init__(self, id=0)->None:
         self.__frame = None
@@ -158,8 +158,22 @@ class Transformer:
         self.__stream_id = id
         self.__centre_point = None
         self.__pers_transformer = None
+        self.__color = None
+        self.b = 0
+        self.g = 0
+        self.r = 0
+
+    def getDstPts(self):
+        if self.__pers_transformer:
+            return self.__pers_transformer.getDstPts()
+        return []
         
     def init(self, img):
+
+        self.b = int(np.random.choice(np.array(colors[0])))
+        self.g = int(np.random.choice(np.array(colors[1])))
+        self.r = int(np.random.choice(np.array(colors[2])))
+        self.__color = (self.b, self.g, self.r)
         self.__frame = img
         cv.namedWindow(self.__window_name, cv.WINDOW_NORMAL)
         # cv.displayOverlay(self.__window_name, "Select The Pitch Coordinates for the Mask")
@@ -208,16 +222,15 @@ class Transformer:
                 cv.imshow(self.__window_name, frame)
 
     def __normalize_coordinates(self, width, height, detections_t)->dict:
-        img_width = width
-        img_height = height
-        detections_n = detections_t
+        detections_n = []
         offsets = self.__pers_transformer.get_offsets()
 
-        for detection in detections_n:
+        for detection in detections_t:
             coord = detection.get('coordinates')
-            x_n = ((coord[1] - offsets[0]) / offsets[2])
-            y_n = ((coord[0]  - offsets[1])/ offsets[3])
-            print((x_n, y_n))
+            x_n = ((coord[0] - offsets[0]) / offsets[2])
+            y_n = ((coord[1]  - offsets[1])/ offsets[3])
+            detection['coordinates'] = (x_n, y_n)
+            detections_n.append(detection)
         return detections_n
 
             
@@ -230,13 +243,14 @@ class Transformer:
         res_vector = None
         if self.__pers_transformer is not None:
             detections_t, res_vector = self.__pers_transformer.transform(detections)
-            img  = cv.polylines(img, [np.array(self.__pers_transformer.getDstPts())], True, (255, 255, 255), 3)
+            # detections_t = [{"coordinates": point, "color":(255, 0, 0)} for point in self.__pers_transformer.getDstPts()]
+            # img  = cv.polylines(img, [np.array(self.__pers_transformer.getDstPts())], True, (255, 255, 255), 3)
             # print(detections_t)
-            for point in res_vector:
-                img = cv.circle(img, point, 15, (255, 255, 255), thickness=cv.FILLED)
+            # for point in detections_t:
+            #     point["color"] = self.__color
+            #     img = cv.circle(img, point['coordinates'], 15, (self.b, self.g, self.r), thickness=cv.FILLED)
             detections_t = self.__normalize_coordinates(img.shape[0], img.shape[1], detections_t)
-           
-        return img, (detections_t, res_vector)
+        return img, detections_t, res_vector
         
         # don some transformations here
 

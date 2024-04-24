@@ -20,11 +20,14 @@ class InputPipeline:
         self.__exit_event = Event()
         self.__result = None
         self.__is_result_ready = Event()
+        self.__data_ready = Event()
         self.__started = False
 
     def init(self)->None:
         self.next()
 
+    def getDstPts(self):
+        return self.__transformer.getDstPts()
 
 
     def next(self)->tuple[dict, cv.Mat]:
@@ -37,22 +40,31 @@ class InputPipeline:
         self.__detector.detect(frame)
         res_obj, detections = self.__detector.get_result()
         if detections is not None and res_obj is not None:
-            img, res  = self.__transformer.transform(res_obj.orig_img, detections)
-            return img, res
+            img, dets, res_vec  = self.__transformer.transform(res_obj.orig_img, detections)
+           
+            return img, dets, res_vec
         
     def __run(self)->None:
         while not self.__exit_event.is_set():
+            self.__data_ready.clear()
             self.__result = self.next()
             self.__is_result_ready.set()
-            while self.__is_result_ready.is_set(): # wait until the results is processed before getting the next results
-                pass
+            self.__data_ready.wait()
+            
+         
+    def get_stream_id(self)->int:
+        return self.__id
+
+    def isOutputReady(self)->bool:
+        return self.__is_result_ready.is_set()
     
     def get_result(self)->tuple|None:
-        if self.__is_result_ready.is_set():
-            result = self.__result
-            self.__is_result_ready.clear()
-            return result
-        return None
+        self.__is_result_ready.wait() # wait for the data to be ready
+        result = self.__result
+        self.__is_result_ready.clear()
+        self.__data_ready.set()
+        return result
+
 
     def start(self)->None:
         if not self.__started:
