@@ -75,7 +75,7 @@ class ProcessingPipeline:
                     merged_space = self.__space_merger.merge(cams_output)
                     merged_image = self.__space_merger.merge_frame(cams_frames_output)
                     
-                    track(merged_image)
+                    # track(merged_image)
 
                     update_mini_map(mm_win_name, mm_bg, merged_space)
                     # cams_output = []

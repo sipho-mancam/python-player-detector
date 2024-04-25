@@ -83,10 +83,17 @@ class PerspectiveTransform(BTransformations):
 
     # calculates dst for cam 1, and cam 3 < side cams>
     def __calculate_dst_pts_wings(self):
+        right_wing =  False
         y_vector = [y[1] for y in self.__src_poly]
         x_vector = [x[0] for x in self.__src_poly]
         alpha = 250
-        x_0 = min(x_vector)
+        x_0 = min(x_vector)    
+
+         # determine if its the left wing or the right wing
+        for point in self.__src_poly:
+            if point[0] == x_0 and (point[1] - min(y_vector)) < 200:
+                right_wing = True
+
         self.__left_offset = x_0 if x_0 > 0 else 1
         y_0 = min(y_vector) - alpha
         self.__top_offset = y_0 if y_0 > 0 else 1
@@ -98,11 +105,16 @@ class PerspectiveTransform(BTransformations):
         y_1 = y_0
         x_2 = x_0
         y_2 = y_n
-        
-        self.__dst_poly.append((x_2, y_2))
-        self.__dst_poly.append((x_0, y_0))
-        self.__dst_poly.append((x_n, y_n)) 
-        self.__dst_poly.append((x_1, y_1))
+        if not right_wing:
+            self.__dst_poly.append((x_2, y_2))
+            self.__dst_poly.append((x_0, y_0))
+            self.__dst_poly.append((x_n, y_n)) 
+            self.__dst_poly.append((x_1, y_1))
+        else:
+            self.__dst_poly.append((x_0, y_0))
+            self.__dst_poly.append((x_2, y_2))
+            self.__dst_poly.append((x_1, y_1)) 
+            self.__dst_poly.append((x_n, y_n)) 
         
 
     def __sort_points(self)->None:
