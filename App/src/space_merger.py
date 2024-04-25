@@ -1,7 +1,7 @@
 
 from input_pipeline import InputPipeline
 import numpy as np
-
+import cv2 as cv
 
 
 class SpaceMerger:
@@ -40,6 +40,12 @@ class SpaceMerger:
                     
                 unified_space.append(det)
         return unified_space
+    
+    def merge_frame(self, frames_list:list)->cv.Mat:
+        # create a tuple of the images in the list
+        f_list_tuple = tuple(frames_list)
+        merged_image = np.hstack(f_list_tuple, dtype=np.uint8)
+        return merged_image
 
 
                    

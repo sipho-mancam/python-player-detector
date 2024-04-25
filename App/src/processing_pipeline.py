@@ -50,24 +50,27 @@ class ProcessingPipeline:
             cv.namedWindow("Preview 0", cv.WINDOW_NORMAL)
             cv.namedWindow("Preview 1", cv.WINDOW_NORMAL)
             cv.namedWindow("Preview 2", cv.WINDOW_NORMAL)
-
+          
             for stream in self.__input_streams:
                 stream.start()
             # run the streams continuosly
             
             while not self.__stop:
                 cams_output = []
+                cams_frames_output = []
                 for idx, stream in enumerate(self.__input_streams):
                     # wait for stream 1, 2 and then 3 
                     res = stream.get_result()
                     if res is not None:  
+                        cams_frames_output.append(res[0])
                         cams_output.append(res[1])
                         cv.imshow("Preview "+str(idx),res[0])
-                
-                cv.waitKey(20)
+                cv.waitKey(1)
                     
                 if len(cams_output) == 3:
                     merged_space = self.__space_merger.merge(cams_output)
+                    merged_image = self.__space_merger.merge_frame(cams_frames_output)
+                    cv.imshow("Merged", merged_image)
                     update_mini_map(mm_win_name, mm_bg, merged_space)
                     # cams_output = []
                     
