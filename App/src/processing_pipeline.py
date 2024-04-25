@@ -6,6 +6,10 @@ from utils import CThread
 import cv2 as cv
 import numpy as np
 
+
+
+from botsort_tracker import track
+
 def load_mini_map(win_name)->cv.Mat:
     mini_map_bg = cv.imread("./App/assets/Soccer_pitch_dimensions.png")
     ret = np.zeros(mini_map_bg.shape, dtype=np.uint8) + 128
@@ -70,7 +74,9 @@ class ProcessingPipeline:
                 if len(cams_output) == 3:
                     merged_space = self.__space_merger.merge(cams_output)
                     merged_image = self.__space_merger.merge_frame(cams_frames_output)
-                    cv.imshow("Merged", merged_image)
+                    
+                    track(merged_image)
+
                     update_mini_map(mm_win_name, mm_bg, merged_space)
                     # cams_output = []
                     

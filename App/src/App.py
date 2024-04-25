@@ -39,12 +39,8 @@ from processing_pipeline import ProcessingPipeline, load_mini_map, update_mini_m
 
 
 def main():
-
     mini_map_window_name = "Mini-Map View"
     cv.namedWindow(mini_map_window_name, cv.WINDOW_NORMAL)
-    # while True:
-    #     mm_bg = load_mini_map(mini_map_window_name)
-    #     update_mini_map(mini_map_window_name, mm_bg, [{"coordinates":(0,0)}])
 
     pp = ProcessingPipeline(
         Path(r"F:\Loftus  Night - 02-04-2024\Processed\3"),
@@ -54,7 +50,8 @@ def main():
     )
     pp.run(mini_map_window_name)
 
-    
+
+
 if __name__ == "__main__":
     try:
         main()
