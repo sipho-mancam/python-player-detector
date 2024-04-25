@@ -27,7 +27,7 @@ def update_mini_map(win_name, bg_img, detections):
         coord = det['coordinates']
         x_scaled = x_offset + int(coord[0]*width)
         y_scaled = y_offset + int(coord[1]*height)
-        clone_bg = cv.circle(clone_bg, (x_scaled, y_scaled), 10, (255, 10, 0), cv.FILLED)
+        clone_bg = cv.circle(clone_bg, (x_scaled, y_scaled), 10, det.get('color') if det.get('color') else (255, 10, 0), cv.FILLED)
     cv.imshow(win_name, clone_bg)
     cv.waitKey(1)
 

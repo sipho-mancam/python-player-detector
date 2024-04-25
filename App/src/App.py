@@ -9,8 +9,6 @@ from pathlib import Path
 from processing_pipeline import ProcessingPipeline, load_mini_map, update_mini_map
 
 
-
-
 # def main():
 #     print("Boostraping Streams ...")
 #     input_streams = InputStreams(3, [r'F:\Loftus  Night - 02-04-2024\Processed\3', 
@@ -23,8 +21,6 @@ from processing_pipeline import ProcessingPipeline, load_mini_map, update_mini_m
 #     cv.namedWindow("Preview 0", cv.WINDOW_NORMAL)
 #     cv.namedWindow("Preview 1", cv.WINDOW_NORMAL)
 #     cv.namedWindow("Preview 2", cv.WINDOW_NORMAL)
-   
-
 #     print("Running ...")
 #     frames = input_streams.next()
 #     while len(frames) > 0:
@@ -33,7 +29,6 @@ from processing_pipeline import ProcessingPipeline, load_mini_map, update_mini_m
 #            dets = json.loads(result.tojson())
 #            result.orig_img, s = draw_points(result.orig_img, dets)
 #            cv.imshow("Preview "+str(index), result.orig_img)
-
 #         cv.waitKey(1)
 #         frames = input_streams.next()
 

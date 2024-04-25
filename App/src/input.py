@@ -5,6 +5,10 @@ import os
 from threading import Thread
 
 
+class BInputSource:
+    def __init__(self, i_type:str, stream_id):
+        self.__type = i_type
+        self.__stream_id = stream_id
 
 
 

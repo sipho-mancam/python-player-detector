@@ -21,22 +21,25 @@ class SpaceMerger:
                # left wing
                 if idx == 0:
                     coord = det['coordinates']
-                    x_scaled = coord[0] * self.__left_wing
-                    det['coordinates'] = (x_scaled, coord[1])
-
+                    if coord[0] >= 0 and coord[1] <=1:
+                        x_scaled = coord[0] * self.__left_wing
+                        det['coordinates'] = (x_scaled, coord[1])
                 # middle 
                 elif idx == 1:
                     coord = det['coordinates']
-                    x_scaled = coord[0] * (self.__middle + 2*self.__m_overlap)
-                    x_shifted = x_scaled + (self.__left_wing - self.__m_overlap)
-                    det['coordinates'] = (x_shifted, coord[1])
+                    if coord[0] >= 0 and coord[1] <=1:
+                        
+                        x_scaled = coord[0] * (self.__middle + 2*self.__m_overlap)
+                        x_shifted = x_scaled + (self.__left_wing - self.__m_overlap)
+                        det['coordinates'] = (x_shifted, coord[1])
                     
                 # Right wing
                 elif idx==2:
                     coord = det['coordinates']
-                    x_scaled = coord[0] * self.__right_wing
-                    x_shifted = x_scaled + (self.__left_wing + self.__middle)
-                    det['coordinates'] =  (x_shifted, coord[1])
+                    if coord[0] >= 0 and coord[1] <=1:
+                        x_scaled = coord[0] * self.__right_wing
+                        x_shifted = x_scaled + (self.__left_wing + self.__middle)
+                        det['coordinates'] =  (x_shifted, coord[1])
                     
                 unified_space.append(det)
         return unified_space

@@ -258,8 +258,8 @@ class Transformer:
             # detections_t = [{"coordinates": point, "color":(255, 0, 0)} for point in self.__pers_transformer.getDstPts()]
             # img  = cv.polylines(img, [np.array(self.__pers_transformer.getDstPts())], True, (255, 255, 255), 3)
             # print(detections_t)
-            # for point in detections_t:
-            #     point["color"] = self.__color
+            for point in detections_t:
+                point["color"] = self.__color
             #     img = cv.circle(img, point['coordinates'], 15, (self.b, self.g, self.r), thickness=cv.FILLED)
             detections_t = self.__normalize_coordinates(img.shape[0], img.shape[1], detections_t)
         return img, detections_t, res_vector

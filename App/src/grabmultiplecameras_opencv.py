@@ -120,3 +120,5 @@ except genicam.GenericException as e:
 
 # Comment the following two lines to disable waiting on exit.
 sys.exit(exitCode)
+
+
