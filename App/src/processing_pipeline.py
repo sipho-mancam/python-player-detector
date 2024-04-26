@@ -49,12 +49,10 @@ class ProcessingPipeline:
         # initiailize the streams here
         for stream in self.__input_streams:
             stream.init() 
-        
         try:
             # cv.namedWindow("Preview 0", cv.WINDOW_NORMAL)
             # cv.namedWindow("Preview 1", cv.WINDOW_NORMAL)
             # cv.namedWindow("Preview 2", cv.WINDOW_NORMAL)
-          
             for stream in self.__input_streams:
                 stream.start()
             # run the streams continuosly

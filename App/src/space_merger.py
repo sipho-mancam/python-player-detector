@@ -38,9 +38,7 @@ class SpaceMerger:
                         x_scaled = coord[0] * self.__right_wing
                         x_shifted = x_scaled + (self.__left_wing + self.__middle)
                         det['coordinates'] =  (x_shifted, coord[1])
-                        unified_space.append(det)
-                 
-                
+                        unified_space.append(det)                
         return unified_space
     
     def merge_frame(self, frames_list:list)->cv.Mat:
@@ -48,8 +46,9 @@ class SpaceMerger:
         sized = []
         for idx, img in enumerate(frames_list):
             n_img = cv.resize(img, (500, 500))
+            n_img = cv.putText(n_img, "Camera "+str(idx+1), (10,400), cv.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0))
+            n_img = cv.rectangle(n_img, (0, 0), (n_img.shape[1], n_img.shape[0]), (255, 0, 0), 10)
             sized.append(n_img)
-
         f_list_tuple = tuple(sized)
         merged_image = np.hstack(f_list_tuple, dtype=np.uint8)
         return merged_image
