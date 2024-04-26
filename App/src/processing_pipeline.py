@@ -27,7 +27,7 @@ def update_mini_map(win_name, bg_img, detections):
         coord = det['coordinates']
         x_scaled = x_offset + int(coord[0]*width)
         y_scaled = y_offset + int(coord[1]*height)
-        clone_bg = cv.circle(clone_bg, (x_scaled, y_scaled), 10, det.get('color') if det.get('color') else (255, 10, 0), cv.FILLED)
+        clone_bg = cv.circle(clone_bg, (x_scaled, y_scaled), 20, det.get('color') if det.get('colors') else (255, 255, 0), cv.FILLED)
     cv.imshow(win_name, clone_bg)
     cv.waitKey(1)
 
@@ -51,9 +51,9 @@ class ProcessingPipeline:
             stream.init() 
         
         try:
-            cv.namedWindow("Preview 0", cv.WINDOW_NORMAL)
-            cv.namedWindow("Preview 1", cv.WINDOW_NORMAL)
-            cv.namedWindow("Preview 2", cv.WINDOW_NORMAL)
+            # cv.namedWindow("Preview 0", cv.WINDOW_NORMAL)
+            # cv.namedWindow("Preview 1", cv.WINDOW_NORMAL)
+            # cv.namedWindow("Preview 2", cv.WINDOW_NORMAL)
           
             for stream in self.__input_streams:
                 stream.start()
@@ -68,13 +68,13 @@ class ProcessingPipeline:
                     if res is not None:  
                         cams_frames_output.append(res[0])
                         cams_output.append(res[1])
-                        cv.imshow("Preview "+str(idx),res[0])
-                cv.waitKey(1)
+                #         cv.imshow("Preview "+str(idx),res[0])
+                # cv.waitKey(1)
                     
                 if len(cams_output) == 3:
                     merged_space = self.__space_merger.merge(cams_output)
                     merged_image = self.__space_merger.merge_frame(cams_frames_output)
-                    
+                    cv.imshow("Preview WIndow", merged_image)
                     # track(merged_image)
 
                     update_mini_map(mm_win_name, mm_bg, merged_space)
