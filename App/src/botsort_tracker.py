@@ -49,11 +49,12 @@ def track2(frame, detections):
     det_output = convert_to_output_results(detections)
     global tracker
     online_tracks = tracker.update(det_output, frame)
-    for t in online_tracks:
-        idx = assign_id(detections, t._tlwh)
-        if idx >=0:
-            det = detections[idx]
-            det['track_id'] = t.track_id
+    for t, det in zip(online_tracks, detections):
+        # idx = assign_id(detections, t._tlwh)
+        # if idx >=0:
+        # det = detections[idx]
+        det['track_id'] = t.track_id
+        det['coordinates'] = t.coordinates
         
         # det = detections[idx]
         # det['track_id'] = t.track_id

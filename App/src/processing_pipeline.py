@@ -25,11 +25,12 @@ def update_mini_map(win_name, bg_img, detections):
     y_offset = 85
     for det in detections:
         coord = det['coordinates']
-        x_scaled = x_offset + int(coord[0]*width)
-        y_scaled = y_offset + int(coord[1]*height)
-        clone_bg = cv.circle(clone_bg, (x_scaled, y_scaled), 20, det.get('color') if det.get('colors') else (255, 255, 0), cv.FILLED)
-        if det.get('track_id') is not None:
-            clone_bg = cv.putText(clone_bg, f"{det['track_id']}", (x_scaled-15, y_scaled+5), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
+        if coord is not None:
+            x_scaled = x_offset + int(coord[0]*width)
+            y_scaled = y_offset + int(coord[1]*height)
+            clone_bg = cv.circle(clone_bg, (x_scaled, y_scaled), 20, det.get('color') if det.get('colors') else (255, 255, 0), cv.FILLED)
+            if det.get('track_id') is not None:
+                clone_bg = cv.putText(clone_bg, f"{det['track_id']}", (x_scaled-15, y_scaled+5), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
     cv.imshow(win_name, clone_bg)
     cv.waitKey(1)
 

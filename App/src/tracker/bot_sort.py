@@ -18,6 +18,7 @@ class STrack(BaseTrack):
         self.coordinates = None
         if 'coordinates' in kwargs:
             self.coordinates = kwargs['coordinates']
+            # print(self.coordinates)
         # wait activate
         self._tlwh = np.asarray(tlwh, dtype=np.float64)
         self.kalman_filter = None
@@ -107,6 +108,7 @@ class STrack(BaseTrack):
         self.state = TrackState.Tracked
         self.is_activated = True
         self.frame_id = frame_id
+        self.coordinates = new_track.coordinates
         if new_id:
             self.track_id = self.next_id()
         self.score = new_track.score
@@ -123,6 +125,7 @@ class STrack(BaseTrack):
         self.tracklet_len += 1
 
         new_tlwh = new_track.tlwh
+        self.coordinates = new_track.coordinates
 
         self.mean, self.covariance = self.kalman_filter.update(self.mean, self.covariance, self.tlwh_to_xywh(new_tlwh))
 
@@ -276,8 +279,8 @@ class BoTSORT(object):
         if len(dets) > 0:
             '''Detections'''
             if self.args.with_reid:
-                detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, f) for
-                              (tlbr, s, f) in zip(dets, scores_keep, features_keep)]
+                detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, f, coordinates=cc) for
+                              (tlbr, s, f, cc) in zip(dets, scores_keep, features_keep,  coordinates_keep)]
             else:
                 detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, coordinates=cc) for
                               (tlbr, s, cc) in zip(dets, scores_keep, coordinates_keep)]
@@ -426,7 +429,7 @@ class BoTSORT(object):
         self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
         if len(self.tracked_stracks) < len(detections):
             self.tracked_stracks = joint_stracks(self.tracked_stracks, activated_starcks)
-        # self.tracked_stracks = joint_stracks(self.tracked_stracks, refind_stracks)
+        self.tracked_stracks = joint_stracks(self.tracked_stracks, refind_stracks)
         self.lost_stracks = sub_stracks(self.lost_stracks, self.tracked_stracks)
         self.lost_stracks.extend(lost_stracks)
         self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
