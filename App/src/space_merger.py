@@ -16,6 +16,7 @@ class SpaceMerger:
     # stream1 = 0-30%; stream2 = 31-70%; stream3 = 71-100%
     def merge(self, cams_detections:list[dict])->list[dict]:
         unified_space = []
+        width = 2480
         for idx, dets_group in enumerate(cams_detections):
            for det in dets_group:
                 coord = det['coordinates']
@@ -31,6 +32,9 @@ class SpaceMerger:
                         x_scaled = coord[0] * (self.__middle + 2*self.__m_overlap)
                         x_shifted = x_scaled + (self.__left_wing - self.__m_overlap)
                         det['coordinates'] = (x_shifted, coord[1])
+                        # Offset the bbox by image width
+                        det['box']['x1'] += width
+                        det['box']['x2'] += width
                         unified_space.append(det)  
                 # Right wing
                 elif idx==2:
@@ -38,6 +42,8 @@ class SpaceMerger:
                         x_scaled = coord[0] * self.__right_wing
                         x_shifted = x_scaled + (self.__left_wing + self.__middle)
                         det['coordinates'] =  (x_shifted, coord[1])
+                        det['box']['x1'] += 2*width
+                        det['box']['x2'] += 2*width
                         unified_space.append(det)                
         return unified_space
     
@@ -51,6 +57,17 @@ class SpaceMerger:
             sized.append(n_img)
         f_list_tuple = tuple(sized)
         merged_image = np.hstack(f_list_tuple, dtype=np.uint8)
+        return merged_image
+    
+    def merge_frame_for_tracking(self, frames_list:list[cv.Mat], scale=1)->cv.Mat:
+        sized = []
+        for _, frame in enumerate(frames_list):
+            if scale < 1:
+                res = cv.resize(frame, (frame.shape[1]*scale, frame.shape[0]*scale))
+                sized.append(res)
+            else:
+                sized.append(frame)
+        merged_image = np.hstack(sized, dtype=np.uint8)
         return merged_image
 
 

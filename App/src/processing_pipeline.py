@@ -8,7 +8,7 @@ import numpy as np
 
 
 
-from botsort_tracker import track
+from botsort_tracker import *
 
 def load_mini_map(win_name)->cv.Mat:
     mini_map_bg = cv.imread("./App/assets/Soccer_pitch_dimensions.png")
@@ -28,6 +28,8 @@ def update_mini_map(win_name, bg_img, detections):
         x_scaled = x_offset + int(coord[0]*width)
         y_scaled = y_offset + int(coord[1]*height)
         clone_bg = cv.circle(clone_bg, (x_scaled, y_scaled), 20, det.get('color') if det.get('colors') else (255, 255, 0), cv.FILLED)
+        if det.get('track_id') is not None:
+            clone_bg = cv.putText(clone_bg, f"{det['track_id']}", (x_scaled-15, y_scaled+5), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0), 2)
     cv.imshow(win_name, clone_bg)
     cv.waitKey(1)
 
@@ -70,11 +72,12 @@ class ProcessingPipeline:
                 # cv.waitKey(1)
                     
                 if len(cams_output) == 3:
+                    frame_track = self.__space_merger.merge_frame_for_tracking(cams_frames_output)
                     merged_space = self.__space_merger.merge(cams_output)
                     merged_image = self.__space_merger.merge_frame(cams_frames_output)
                     cv.imshow("Preview WIndow", merged_image)
-                    # track(merged_image)
-
+                    
+                    merged_space = track2(frame_track, merged_space)
                     update_mini_map(mm_win_name, mm_bg, merged_space)
                     # cams_output = []
                     
