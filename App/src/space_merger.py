@@ -16,7 +16,7 @@ class SpaceMerger:
     # stream1 = 0-30%; stream2 = 31-70%; stream3 = 71-100%
     def merge(self, cams_detections:list[dict])->list[dict]:
         unified_space = []
-        width = 2480
+        width = 2590
         for idx, dets_group in enumerate(cams_detections):
            for det in dets_group:
                 coord = det['coordinates']

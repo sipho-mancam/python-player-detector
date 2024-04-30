@@ -37,10 +37,11 @@ class ISDetector:
 
             res = self.__worker_thread.get_return()
             if res is not None:
+                clean_frame = res[0].orig_img.copy()
                 res[0].orig_img = res[0].plot(line_width=2, labels=False)
                 dets = json.loads(res[0].tojson())
                 res[0].orig_img, s = draw_points(res[0].orig_img, dets)
-            return res[0], s
+            return res[0], s, clean_frame
         
     def is_ready(self): 
         return self.__is_ready.is_set()

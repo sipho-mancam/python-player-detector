@@ -20,8 +20,6 @@ def main():
     )
     pp.run(mini_map_window_name)
 
-
-
 if __name__ == "__main__":
     try:
         main()

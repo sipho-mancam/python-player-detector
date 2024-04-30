@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
-
+import os
+import json
 class BoxToPoint:
     def __init__(self, det_struct:dict, **kwargs)->None:
         self.__det_struct = det_struct # JSON representation of the detections object
@@ -179,8 +180,34 @@ class Transformer:
         if self.__pers_transformer:
             return self.__pers_transformer.getDstPts()
         return []
+    
+    def write_calib(self):
+        data = {}
+        with open(f"{self.__stream_id}.json", "w") as fp:
+            data["src_pts"] = self.__pitch_coordinates
+            if self.__centre_point is not None:
+                data["center_pt"] = self.__centre_point
+            json.dump(data, fp)
+    
+    def read_calib(self):
+        data = {}
+        with open(f"{self.__stream_id}.json", 'r') as fp:
+            data = json.load(fp)
+            poly = data.get('src_pts')
+            if poly is not None:
+                self.__pitch_coordinates = poly
+            if 'center_pt' in data:
+                self.__centre_point = data['center_pt']
+        return data
+    
+    def is_calib(self)->bool:
+        return os.path.exists(f"{self.__stream_id}.json")
         
     def init(self, img):
+        if self.is_calib():
+            data = self.read_calib()
+            self.__pers_transformer = PerspectiveTransform(self.__pitch_coordinates, self.__centre_point)
+            return
 
         self.b = int(np.random.choice(np.array(colors[0])))
         self.g = int(np.random.choice(np.array(colors[1])))
@@ -211,6 +238,8 @@ class Transformer:
         cv.waitKey(20)
         self.__is_init = True
         cv.destroyWindow(self.__window_name)
+        self.write_calib()
+        
        
     def get_coordinate(self, event, x, y, flags, params)->None:
         if event == cv.EVENT_LBUTTONDOWN:

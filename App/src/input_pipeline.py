@@ -22,6 +22,7 @@ class InputPipeline:
         self.__is_result_ready = Event()
         self.__data_ready = Event()
         self.__started = False
+        self.__clean_frame = None
 
     def init(self)->None:
         self.next()
@@ -38,12 +39,15 @@ class InputPipeline:
         # populate the result list with the output of the transformer
         frame = self.__input_stream.next()
         self.__detector.detect(frame)
-        res_obj, detections = self.__detector.get_result()
+        res_obj, detections, clean_frame = self.__detector.get_result()
+        self.__clean_frame = clean_frame
         if detections is not None and res_obj is not None:
             img, dets, res_vec  = self.__transformer.transform(res_obj.orig_img, detections)
-           
-            return img, dets, res_vec
+            return img, dets, res_vec, clean_frame
         
+    def get_clean_frame(self)->cv.Mat:
+        return self.__clean_frame
+
     def __run(self)->None:
         while not self.__exit_event.is_set():
             self.__data_ready.clear()

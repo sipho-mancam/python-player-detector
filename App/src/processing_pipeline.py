@@ -5,9 +5,6 @@ from pathlib import Path
 from utils import CThread
 import cv2 as cv
 import numpy as np
-
-
-
 from botsort_tracker import *
 
 def load_mini_map(win_name)->cv.Mat:
@@ -34,15 +31,16 @@ def update_mini_map(win_name, bg_img, detections):
     cv.imshow(win_name, clone_bg)
     cv.waitKey(1)
 
+
 class ProcessingPipeline:
     def __init__(self, stream1, stream2, stream3, weights)->None:
         self.__input_streams = [InputPipeline(stream1, 0, weights), 
                                 InputPipeline(stream2, 1, weights),
                                 InputPipeline(stream3, 2, weights)]
-
         self.__space_merger = SpaceMerger(self.__input_streams)
-        self.__detections_output = None
+        self.__detections_output = DetectionsOutput()
         self.__stop = False
+        self.__frame_counter = 0
 
     def run(self, mm_win_name="")->None:
         # Run the input pipeline
@@ -53,35 +51,39 @@ class ProcessingPipeline:
         for stream in self.__input_streams:
             stream.init() 
         try:
-            # cv.namedWindow("Preview 0", cv.WINDOW_NORMAL)
-            # cv.namedWindow("Preview 1", cv.WINDOW_NORMAL)
-            # cv.namedWindow("Preview 2", cv.WINDOW_NORMAL)
             for stream in self.__input_streams:
                 stream.start()
+
             # run the streams continuosly
-            
             while not self.__stop:
                 cams_output = []
                 cams_frames_output = []
+                frames_clean = []
                 for idx, stream in enumerate(self.__input_streams):
                     # wait for stream 1, 2 and then 3 
                     res = stream.get_result()
                     if res is not None:  
                         cams_frames_output.append(res[0])
                         cams_output.append(res[1])
-                #         cv.imshow("Preview "+str(idx),res[0])
-                # cv.waitKey(1)
+                        frames_clean.append(res[-1])
                     
                 if len(cams_output) == 3:
-                    frame_track = self.__space_merger.merge_frame_for_tracking(cams_frames_output)
-                    merged_space = self.__space_merger.merge(cams_output)
+                    # Merge images clean for tracking
+                    frame_track = self.__space_merger.merge_frame_for_tracking(frames_clean)
+                    # Merge images dirty for preview 
                     merged_image = self.__space_merger.merge_frame(cams_frames_output)
+                    # Merge detections results for mini_map <normalized>
+                    merged_space = self.__space_merger.merge(cams_output)
                     cv.imshow("Preview WIndow", merged_image)
-                    
-                    merged_space = track2(frame_track, merged_space)
-                    update_mini_map(mm_win_name, mm_bg, merged_space)
-                    # cams_output = []
-                    
+                    mini_map_data, structured_data = track2(frame_track, merged_space)
+
+                    # Outputs
+                    structured_data['frame_number'] = self.__frame_counter
+                    self.__detections_output.update(structured_data) 
+                    self.__detections_output.write_to_kafka()
+                    update_mini_map(mm_win_name, mm_bg, mini_map_data)
+                    self.__frame_counter +=1
+
         except KeyboardInterrupt as ke:
             for stream in self.__input_streams:
                 stream.stop()
