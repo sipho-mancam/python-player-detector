@@ -1,3 +1,4 @@
+from input import DeviceFactory, InputStreamB
 from input_pipeline import InputPipeline
 from space_merger import SpaceMerger
 from output_ import DetectionsOutput
@@ -34,6 +35,8 @@ def update_mini_map(win_name, bg_img, detections):
 
 class ProcessingPipeline:
     def __init__(self, stream1, stream2, stream3, weights)->None:
+        self.__device__factory = DeviceFactory()
+        self.__device__factory.wait_for_cameras(3)
         self.__input_streams = [InputPipeline(stream1, 0, weights), 
                                 InputPipeline(stream2, 1, weights),
                                 InputPipeline(stream3, 2, weights)]

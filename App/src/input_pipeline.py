@@ -1,4 +1,4 @@
-from input import InputStream
+from input import InputStream, InputStreamB
 from detector import ISDetector
 from coordinate_transforms import draw_points, Transformer
 from pathlib import Path
@@ -8,10 +8,17 @@ from threading import Event
 
 
 class InputPipeline:
-    def __init__(self, path:Path, id:int, weights:Path|str, engine:bool=True, **kwargs) -> None:
+    def __init__(self, path:Path|str|InputStreamB, id:int, weights:Path|str, engine:bool=True, **kwargs) -> None:
         self.__path = path
-        self.__id = id;
+        self.__id = id
+
+        # self.__input_stream = path
+        # if type(path) is Path or type(path) is str:
         self.__input_stream = InputStream(self.__path, self.__id)
+        # elif type(path) is InputStreamB:
+            
+        # else:
+        #     self.__input_stream = InputStream(self.__path, self.__id)
         self.__weights = weights
         self.__engine = engine
         self.__detector = ISDetector(self.__weights, self.__engine)
@@ -23,8 +30,11 @@ class InputPipeline:
         self.__data_ready = Event()
         self.__started = False
         self.__clean_frame = None
+        
 
     def init(self)->None:
+        # if not self.__input_stream.Is_grabbing():
+        #     self.__input_stream.start_grabbing()
         self.next()
 
     def getDstPts(self):
@@ -37,6 +47,9 @@ class InputPipeline:
         # Get the results of the Detector
         # pass the results of the detector to the Transformer
         # populate the result list with the output of the transformer
+        # if not self.__input_stream.Is_grabbing():
+        #     self.__input_stream.start_grabbing()
+
         frame = self.__input_stream.next()
         self.__detector.detect(frame)
         res_obj, detections, clean_frame = self.__detector.get_result()

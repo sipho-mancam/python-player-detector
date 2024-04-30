@@ -2,7 +2,10 @@ import cv2 as cv
 import numpy as np
 from pathlib import Path
 import os
-from threading import Thread
+from threading import Thread, Event
+from pypylon import pylon
+import cv2
+import threading
 
 
 class BInputSource:
@@ -78,3 +81,103 @@ class InputStreams:
             if frame is not None:
                 result.append(frame)
         return result
+    
+
+
+
+
+class InputStreamB:
+    def __init__(self, camera:pylon.InstantCamera):
+        print(camera)
+        self.camera = camera
+        self.is_grabbing = False
+        self.grab_thread = None
+        self.frames_buffer = []
+        self.converter = pylon.ImageFormatConverter()
+        self.data_ready = Event()
+        self.init()
+
+    def init(self):
+        self.converter.OutputPixelFormat = pylon.PixelType_BGR8packed
+        self.converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
+
+    def start_grabbing(self):
+        self.camera.StartGrabbing()
+        self.is_grabbing = self.camera.IsGrabbing()
+        self.grab_thread = threading.Thread(target=self._grab_loop)
+        self.grab_thread.start()
+
+    def Is_grabbing(self)->bool:
+        return self.camera.IsGrabbing()
+
+    def _grab_loop(self):
+        while self.camera.IsGrabbing():
+            grab_result = self.camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+            if grab_result.GrabSucceeded():
+                # Convert grabbed image to OpenCV format (assuming it's a Mono8 image)
+                image = self.converter.Convert(grab_result)
+                img = image.GetArray()
+                self.frames_buffer.append(img)
+                self.data_ready.set()
+                if len(self.frames_buffer) > 10:
+                    self.frames_buffer.pop(0) # remove the oldest frame
+                cv2.namedWindow(self.camera.GetDeviceInfo().GetFriendlyName(), cv2.WINDOW_NORMAL)
+                cv2.imshow(self.camera.GetDeviceInfo().GetFriendlyName(), img)
+                cv.waitKey(1)
+            grab_result.Release()
+
+    def _record_video(self):
+        pass
+
+    def next(self)->cv.Mat:
+        self.data_ready.wait()
+        if len(self.frames_buffer) > 0:
+            self.data_ready.clear()
+            return self.frames_buffer.pop(0)
+    
+
+    def stop_grabbing(self):
+        self.is_grabbing = False
+        if self.grab_thread:
+            self.grab_thread.join()
+
+class DeviceFactory:
+    def __init__(self):
+        self.cameras = []
+
+    def wait_for_cameras(self, num_cameras=3):
+        tlFactory = pylon.TlFactory.GetInstance()
+        devices = tlFactory.EnumerateDevices()
+        while len(devices) < num_cameras:
+            # pass
+            # Initialize cameras and add to the list
+           devices = tlFactory.EnumerateDevices()
+        
+        for dev in devices:
+            cam = pylon.InstantCamera()
+            cam.Attach(tlFactory.CreateDevice(dev))
+            self.cameras.append(cam)
+        
+
+    def get_input_stream(self, index=0):
+        if index < len(self.cameras):
+            return InputStreamB(self.cameras[index])
+        else:
+            raise IndexError("Camera index out of range")
+
+if __name__ == "__main__":
+    factory = DeviceFactory()
+    factory.wait_for_cameras(3)
+    
+    # Assuming you want to work with the first camera
+    cam_stream = factory.get_input_stream(0)
+    cam_stream_2 = factory.get_input_stream(1)
+    cam_stream_3 = factory.get_input_stream(2)
+
+    cam_stream.start_grabbing()
+    cam_stream_2.start_grabbing()
+    cam_stream_3.start_grabbing()
+
+    input("Press Enter to stop grabbing...")
+    cam_stream.stop_grabbing()
+    cv2.destroyAllWindows()
